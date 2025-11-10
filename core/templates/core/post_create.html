@@ -1,0 +1,9 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<h2>投稿作成</h2>
+<form method="post">
+  {% csrf_token %}
+  <textarea name="content" rows="4" cols="40" required></textarea><br>
+  <button type="submit">投稿</button>
+</form>
+{% endblock %}

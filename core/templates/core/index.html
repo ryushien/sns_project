@@ -1,0 +1,12 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<h2>投稿一覧</h2>
+<a href="{% url 'post_create' %}">新規投稿</a>
+<ul>
+{% for post in posts %}
+  <li><strong>{{ post.user.username }}</strong>: {{ post.content }} ({{ post.created_at|date:"Y/m/d H:i" }})</li>
+{% empty %}
+  <li>投稿はまだありません。</li>
+{% endfor %}
+</ul>
+{% endblock %}
