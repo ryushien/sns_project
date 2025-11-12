@@ -68,3 +68,21 @@ TEMPLATES = [
 # どこかの設定行と同じブロックに追記
 ROOT_URLCONF = 'sns_project.urls'
 WSGI_APPLICATION = 'sns_project.wsgi.application'
+
+# 本番のみ有効にする想定
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_SAMESITE = "Lax"
+    SECURE_BROWSER_XSS_FILTER = True          # 古いブラウザ向け
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_SSL_REDIRECT = True                # http→https へ強制
+
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME":"django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME":"django.contrib.auth.password_validation.MinimumLengthValidator","OPTIONS":{"min_length":8}},
+    {"NAME":"django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME":"django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
+
