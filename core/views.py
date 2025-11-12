@@ -36,7 +36,7 @@ def post_create(request):
 # core/views.py
 from django.contrib.auth.views import LoginView
 from django.utils.decorators import method_decorator
-from ratelimit.decorators import ratelimit
+#from ratelimit.decorators import ratelimit
 from django.contrib import messages
 
 # POSTメソッドの試行をIP単位で 5回/分 に制限。超過時は 429 を返す。
