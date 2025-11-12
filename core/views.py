@@ -2,7 +2,11 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
 from .models import Post
-from django_ratelimit.decorators import ratelimit
+try:
+    from ratelimit.decorators import ratelimit           # 通常はこちら
+except ImportError:
+    from django_ratelimit.decorators import ratelimit    # 環境によってはこちら
+
 
 def signup_view(request):
     if request.method == 'POST':
@@ -33,7 +37,6 @@ def post_create(request):
 
 # Create your views here.
 
-# core/views.py
 from django.contrib.auth.views import LoginView
 from django.utils.decorators import method_decorator
 from django.contrib import messages

@@ -6,6 +6,13 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret")  # 本番は環境変数
 DEBUG = os.environ.get("DEBUG", "True") == "True"
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",") if not DEBUG else []
 
+LANGUAGE_CODE = 'ja'
+TIME_ZONE = 'Asia/Tokyo'
+USE_I18N = True
+USE_L10N = True
+USE_TZ = True
+
+
 # Static（Whitenoise）
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
