@@ -37,3 +37,34 @@ CSRF_TRUSTED_ORIGINS = [
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/login/"
+
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',  # ← これが抜けていないか要確認！
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+
+    'core',  # あなたのアプリ
+]
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [],  # ← 特別なテンプレートフォルダが無ければ空でOK
+        'APP_DIRS': True,  # ← 各アプリ内 templates/ を自動で探す
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+# どこかの設定行と同じブロックに追記
+ROOT_URLCONF = 'sns_project.urls'
+WSGI_APPLICATION = 'sns_project.wsgi.application'
