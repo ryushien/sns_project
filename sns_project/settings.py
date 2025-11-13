@@ -26,6 +26,7 @@ MIDDLEWARE = [
 ]
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # DB（本番はDATABASE_URLを使う / ローカルはSQLite）
 import dj_database_url
