@@ -3,7 +3,7 @@
 <head><title>Mini SNS</title></head>
 <body>
 {% if user.is_authenticated %}
-  <p>こんにちは {{ user.username }} さん！ <a href="{% url 'logout' %}">ログアウト</a></p>
+  <p>こんにちは {{ user.username }} さん！ <a href="{% url 'login' %}">ログアウト</a></p>
 {% else %}
   <a href="{% url 'login' %}">ログイン</a> | <a href="{% url 'signup' %}">新規登録</a>
 {% endif %}

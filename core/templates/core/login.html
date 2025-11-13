@@ -5,15 +5,9 @@
   <meta charset="UTF-8">
   <title>ログイン</title>
   <style>
-    .login-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .login-header img {
-      width: 50px;
-      height: 50px;
-    }
+    .login-header { display:flex; align-items:center; gap:10px; }
+    .login-header img { width:50px; height:50px; }
+    .helper { margin:0 0 1rem; }
   </style>
 </head>
 <body>
@@ -22,11 +16,18 @@
     <img src="{% static 'core/shiroko-dance.gif' %}" alt="shiroko" width="50" height="50">
   </div>
 
-  <!-- 以下、ログインフォーム -->
-  <form method="post">
+  <!-- 新規登録リンク（上部に案内） -->
+  <p class="helper">
+    アカウントがない方は
+    <a href="{% url 'signup' %}?next={{ request.GET.next|default:'/' }}">新規登録</a>
+  </p>
+
+  <!-- ログインフォーム -->
+  <form method="post" action="{% url 'login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}">
     {% csrf_token %}
     {{ form.as_p }}
     <button type="submit">ログイン</button>
   </form>
+
 </body>
 </html>
