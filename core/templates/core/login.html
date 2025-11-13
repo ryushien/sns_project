@@ -2,32 +2,204 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>ログイン</title>
   <style>
-    .login-header { display:flex; align-items:center; gap:10px; }
-    .login-header img { width:50px; height:50px; }
-    .helper { margin:0 0 1rem; }
+    /* --- 背景レイヤ --- */
+    .float-bg {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      z-index: 0;            /* フォームより背面 */
+      background: radial-gradient(1200px 800px at 20% -10%, #eef7ff 0%, transparent 50%),
+                  radial-gradient(1000px 700px at 120% 110%, #fff7ee 0%, transparent 60%);
+    }
+    .float-item {
+      position: absolute;
+      font-size: 28px;       /* 漂うオブジェクトのサイズ */
+      will-change: transform, opacity;
+      animation: float var(--dur, 16s) linear infinite;
+      filter: drop-shadow(0 2px 2px rgba(0,0,0,.1));
+      cursor: pointer;
+      user-select: none;
+    }
+    @keyframes float {
+      from { transform: translate3d(var(--x,0), 110vh, 0) rotate(0deg);   opacity: .95; }
+      to   { transform: translate3d(calc(var(--x,0) + var(--drift, 0px)), -20vh, 0) rotate(360deg); opacity: .95; }
+    }
+    /* ホバーで“ポンッ”と消える */
+    .float-item.pop {
+      animation: pop .25s ease forwards;
+    }
+    @keyframes pop {
+      to { transform: scale(1.6) translateY(-10px); opacity: 0; }
+    }
+
+    /* --- 右下カウンタ --- */
+    .caught-counter {
+      position: fixed;
+      right: 14px; bottom: 14px;
+      z-index: 3;
+      background: rgba(0,0,0,.65);
+      color: #fff;
+      padding: .5rem .75rem;
+      border-radius: .75rem;
+      font-size: 14px;
+    }
+
+    /* --- フォームレイヤ（前面） --- */
+    .page {
+      position: relative;
+      z-index: 2;            /* 背景より前面 */
+      max-width: 520px;
+      margin: 48px auto;
+      padding: 24px 28px 40px;
+      background: rgba(255,255,255,.9);
+      border: 1px solid #eee;
+      border-radius: 14px;
+      box-shadow: 0 10px 40px rgba(0,0,0,.06);
+    }
+    .login-header {
+      display: flex; align-items: center; gap: 10px;
+      margin-top: 0;
+    }
+    .login-header img { width: 50px; height: 50px; }
+    .helper { margin: .25rem 0 1rem; }
+
+    /* BGM ボタン用の軽い装飾（お好みで変更OK） */
+    .bgm-control {
+      margin-top: 0.75rem;
+    }
+    .bgm-control button {
+      padding: .4rem .9rem;
+      border-radius: .5rem;
+      border: 1px solid #ccc;
+      background: #f4f4ff;
+      cursor: pointer;
+    }
+
+    /* 動きが苦手な人向け配慮 */
+    @media (prefers-reduced-motion: reduce) {
+      .float-item { animation: none; }
+    }
   </style>
 </head>
 <body>
-  <div class="login-header">
-    <h1>ログイン</h1>
-    <img src="{% static 'core/shiroko-dance.gif' %}" alt="shiroko" width="50" height="50">
-  </div>
+  <!-- 背景：漂うオブジェクト -->
+  <div class="float-bg" id="floatBg" aria-hidden="true"></div>
+  <div class="caught-counter" id="counter">消した数：0</div>
 
-  <!-- 新規登録リンク（上部に案内） -->
-  <p class="helper">
-    アカウントがない方は
-    <a href="{% url 'signup' %}?next={{ request.GET.next|default:'/' }}">新規登録</a>
-  </p>
+  <!-- 前面：ログインボックス -->
+  <main class="page">
+    <h1 class="login-header">
+      ログイン
+      <img src="{% static 'core/shiroko-dance.gif' %}" alt="shiroko">
+    </h1>
 
-  <!-- ログインフォーム -->
-  <form method="post" action="{% url 'login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">ログイン</button>
-  </form>
+    <p class="helper">
+      アカウントがない方は
+      <a href="{% url 'signup' %}?next={{ request.GET.next|default:'/' }}">新規登録</a>
+    </p>
 
+    <form method="post" action="{% url 'login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit">ログイン</button>
+    </form>
+
+    <!-- 💿 ここから BGM 関連を追加 💿 -->
+
+    <!-- 見えない BGM プレイヤー本体 -->
+    <audio id="bgm" loop>
+      <source src="{% static 'core/login-bgm.mp3' %}" type="audio/mpeg">
+      お使いのブラウザはオーディオ再生に対応していません。
+    </audio>
+
+    <!-- 再生/停止ボタン -->
+    <p class="bgm-control">
+      <button type="button" id="bgm-toggle">BGM 再生</button>
+    </p>
+
+    <!-- 💿 ここまで BGM 追加部分 💿 -->
+
+  </main>
+
+  <script>
+    // 浮遊させる候補（ユーモアにどうぞ：自由に追加/変更してOK）
+    const EMOJIS = ["🧁","🐱","🍣","💻","🔐","🦊","🎈","🍩","🛰️","🐟","🧊","✨","📦","🧪","🎮"];
+    const BG = document.getElementById('floatBg');
+    const COUNTER = document.getElementById('counter');
+    let caught = 0;
+
+    // 画面サイズに応じて数を決める
+    const COUNT = Math.min(28, Math.max(14, Math.floor(window.innerWidth / 45)));
+
+    function spawnOne() {
+      const el = document.createElement('div');
+      el.className = 'float-item';
+      el.textContent = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+
+      // ランダムな開始X、漂い量、速度、遅延
+      const startX = Math.floor(Math.random() * 100);            // vw
+      const drift  = (Math.random() * 120 - 60) + 'px';          // 左右にフラつく
+      const dur    = (12 + Math.random() * 12) + 's';
+      const delay  = (-Math.random() * 12) + 's';
+
+      el.style.setProperty('--x', startX + 'vw');
+      el.style.setProperty('--drift', drift);
+      el.style.setProperty('--dur', dur);
+      el.style.animationDelay = delay;
+
+      // 触れたら“消す”＋カウント
+      el.addEventListener('mouseenter', () => {
+        if (el.classList.contains('pop')) return;
+        el.classList.add('pop');
+        caught++;
+        COUNTER.textContent = `消した数：${caught}`;
+        // 消え終わったら入れ替え（数を一定に保つ）
+        setTimeout(() => {
+          el.remove();
+          spawnOne();
+        }, 250);
+      });
+
+      BG.appendChild(el);
+    }
+
+    // 初期生成
+    for (let i = 0; i < COUNT; i++) spawnOne();
+
+    // リサイズで数を調整（重くならない程度に）
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        const need = Math.min(28, Math.max(14, Math.floor(window.innerWidth / 45)));
+        const now = BG.querySelectorAll('.float-item').length;
+        if (need > now) for (let i = 0; i < (need - now); i++) spawnOne();
+      }, 200);
+    });
+
+    // 🎵 BGM 再生/停止ロジック 🎵
+    const bgm = document.getElementById('bgm');
+    const bgmBtn = document.getElementById('bgm-toggle');
+    let bgmPlaying = false;
+
+    bgmBtn.addEventListener('click', async () => {
+      try {
+        if (!bgmPlaying) {
+          await bgm.play();                 // 再生
+          bgmPlaying = true;
+          bgmBtn.textContent = 'BGM 停止';
+        } else {
+          bgm.pause();                      // 一時停止
+          bgmPlaying = false;
+          bgmBtn.textContent = 'BGM 再生';
+        }
+      } catch (e) {
+        console.log('BGM 再生エラー:', e);
+      }
+    });
+  </script>
 </body>
 </html>
