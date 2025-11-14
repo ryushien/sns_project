@@ -3,11 +3,17 @@
 <head><title>Mini SNS</title></head>
 <body>
 {% if user.is_authenticated %}
-  <p>こんにちは {{ user.username }} さん！ <a href="{% url 'login' %}">ログアウト</a></p>
+  <p>こんにちは {{ user.username }} さん！</p>
+  <form method="post" action="{% url 'logout' %}">
+    {% csrf_token %}
+    <button type="submit">ログアウト</button>
+  </form>
 {% else %}
-  <a href="{% url 'login' %}">ログイン</a> | <a href="{% url 'signup' %}">新規登録</a>
+  <a href="{% url 'login' %}">ログイン</a> |
+  <a href="{% url 'signup' %}">新規登録</a>
 {% endif %}
 <hr>
+
 {% block content %}{% endblock %}
 </body>
 </html>

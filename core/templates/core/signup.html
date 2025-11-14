@@ -1,6 +1,13 @@
 {% extends 'core/base.html' %}
+{% load static %}
 {% block content %}
 <h2>新規登録</h2>
+
+<div style="margin-bottom: 20px;">
+  <img src="{% static 'core/angry-alice.gif' %}" alt="alice"
+       style="max-width: 250px; display: block;">
+</div>
+
 <form method="post">
   {% csrf_token %}
   {{ form.as_p }}
