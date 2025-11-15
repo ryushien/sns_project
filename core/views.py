@@ -1,7 +1,10 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
-from .models import Post
+from django.contrib import messages
+
+from .models import Thread, Post  # ★ ここを変更：Thread も読み込む
+
 try:
     from ratelimit.decorators import ratelimit           # 通常はこちら
 except ImportError:
@@ -18,37 +21,109 @@ def signup_view(request):
         form = UserCreationForm()
     return render(request, 'core/signup.html', {'form': form})
 
-@login_required
-def index(request):
-    posts = Post.objects.all().order_by('-created_at')
-    return render(request, 'core/index.html', {'posts': posts})
 
+# -----------------------------
+# 2ch 風：スレッド一覧
+# -----------------------------
+@login_required
+def thread_list(request):
+    threads = Thread.objects.all().order_by('-created_at')
+    return render(request, 'core/index.html', {  # ★ index.html をスレ一覧に使う
+        'threads': threads
+    })
+
+
+# -----------------------------
+# 新規スレッド作成（スレ立て＋>>1）
+# -----------------------------
 @login_required
 @ratelimit(key='user', rate='10/m', method='POST', block=True)
-def post_create(request):
+def thread_new(request):
     if request.method == 'POST':
-        if getattr(request,'limited',False):
-            return render(request,'core/post_create.html',{'error': '投稿が多すぎます 1分後に再試行してください。'})
+        if getattr(request, 'limited', False):
+            return render(
+                request,
+                'core/post_create.html',
+                {'error': 'スレ立てが多すぎます。1分後に再試行してください。'}
+            )
+
+        title = request.POST.get('title')
         content = request.POST.get('content')
-        if content:
-            Post.objects.create(user=request.user, content=content)
-        return redirect('index')
+
+        if title and content:
+            # スレッド本体
+            thread = Thread.objects.create(
+                title=title,
+                created_by=request.user
+            )
+            # >>1 の投稿
+            Post.objects.create(
+                thread=thread,
+                author=request.user,
+                content=content
+            )
+            return redirect('thread_detail', thread_id=thread.id)
+
     return render(request, 'core/post_create.html')
 
-# Create your views here.
 
+# -----------------------------
+# スレッド詳細（レス一覧）
+# -----------------------------
+@login_required
+def thread_detail(request, thread_id):
+    thread = get_object_or_404(Thread, id=thread_id)
+    posts = thread.posts.all().order_by('created_at')
+    return render(request, 'core/thread_detail.html', {
+        'thread': thread,
+        'posts': posts
+    })
+
+
+# -----------------------------
+# レス投稿
+# -----------------------------
+@login_required
+@ratelimit(key='user', rate='20/m', method='POST', block=True)
+def post_reply(request, thread_id):
+    thread = get_object_or_404(Thread, id=thread_id)
+
+    if request.method == 'POST':
+        if getattr(request, 'limited', False):
+            posts = thread.posts.all().order_by('created_at')
+            return render(request, 'core/thread_detail.html', {
+                'thread': thread,
+                'posts': posts,
+                'error': '投稿が多すぎます。1分後に再試行してください。'
+            })
+
+        content = request.POST.get('content')
+        if content:
+            Post.objects.create(
+                thread=thread,
+                author=request.user,
+                content=content
+            )
+        return redirect('thread_detail', thread_id=thread.id)
+
+    return redirect('thread_detail', thread_id=thread.id)
+
+
+# -----------------------------
+# ログイン制限付き LoginView（そのまま）
+# -----------------------------
 from django.contrib.auth.views import LoginView
 from django.utils.decorators import method_decorator
-from django.contrib import messages
 
-# POSTメソッドの試行をIP単位で 5回/分 に制限。超過時は 429 を返す。
-@method_decorator(ratelimit(key='ip', rate='5/m', method='POST', block=True), name='dispatch')
+@method_decorator(
+    ratelimit(key='ip', rate='5/m', method='POST', block=True),
+    name='dispatch'
+)
 class RateLimitedLoginView(LoginView):
     template_name = 'core/login.html'
 
     def post(self, request, *args, **kwargs):
-        # ratelimit によって request.limited が付与される
         if getattr(request, 'limited', False):
             messages.error(request, "ログイン試行が多すぎます。1分後に再試行してください。")
-            return self.get(request, *args, **kwargs)  # フォーム再表示
+            return self.get(request, *args, **kwargs)
         return super().post(request, *args, **kwargs)

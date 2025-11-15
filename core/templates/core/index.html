@@ -1,15 +1,23 @@
 {% extends 'core/base.html' %}
 
-{% block show_gif %}{% endblock %}  
+{% block show_gif %}{% endblock %}
 
 {% block content %}
-<h2>投稿一覧</h2>
-<a href="{% url 'post_create' %}">新規投稿</a>
+<h2>スレッド一覧</h2>
+<a href="{% url 'thread_new' %}">新規スレッド作成</a>
+
 <ul>
-{% for post in posts %}
-  <li><strong>{{ post.user.username }}</strong>: {{ post.content }} ({{ post.created_at|date:"Y/m/d H:i" }})</li>
-{% empty %}
-  <li>投稿はまだありません。</li>
-{% endfor %}
+  {% for thread in threads %}
+    <li>
+      <a href="{% url 'thread_detail' thread.id %}">
+        {{ thread.title }}
+      </a>
+      （作成者: {{ thread.created_by.username }}
+       / レス {{ thread.posts.count }}
+       / {{ thread.created_at|date:"Y/m/d H:i" }}）
+    </li>
+  {% empty %}
+    <li>まだスレッドがありません。</li>
+  {% endfor %}
 </ul>
 {% endblock %}

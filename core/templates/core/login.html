@@ -127,7 +127,13 @@
 
   <script>
     // 浮遊させる候補（ユーモアにどうぞ：自由に追加/変更してOK）
-    const EMOJIS = ["🧁","🐱","🍣","💻","🔐","🦊","🎈","🍩","🛰️","🐟","🧊","✨","📦","🧪","🎮"];
+    const GIFS = [
+      '{% static "core/dance-arona.gif" %}',
+      '{% static "core/dance-momoi.gif" %}',
+      '{% static "core/angry-neru.gif" %}',
+      '{% static "core/dance-purana.gif" %}',
+      '{% static "core/dance-uzawa.gif" %}',
+    ];
     const BG = document.getElementById('floatBg');
     const COUNTER = document.getElementById('counter');
     let caught = 0;
@@ -138,7 +144,13 @@
     function spawnOne() {
       const el = document.createElement('div');
       el.className = 'float-item';
-      el.textContent = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+
+      const img = document.createElement('img');
+      img.src = GIFS[Math.floor(Math.random() * GIFS.length)];  
+      img.className = 'float-img';
+
+      el.appendChild(img);
+
 
       // ランダムな開始X、漂い量、速度、遅延
       const startX = Math.floor(Math.random() * 100);            // vw
