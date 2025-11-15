@@ -1,13 +1,23 @@
+{% load static %}
 <!DOCTYPE html>
 <html>
-<head><title>Mini SNS</title></head>
-<body>
+<head>
+    <title>Mini SNS</title>
+    <link rel="stylesheet" href="{% static 'core/style.css' %}?v={{ now }}">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+
 {% if user.is_authenticated %}
-  <p>こんにちは {{ user.username }} さん！</p>
-  <form method="post" action="{% url 'logout' %}">
-    {% csrf_token %}
-    <button type="submit">ログアウト</button>
-  </form>
+  <p>こんにちは {{ user.username }} さん！
+  <a href="#" onclick="document.getElementById('logout-form').submit(); return false;">
+     ログアウト
+   </a>
+
+   <form id="logout-form" method="post" action="{% url 'logout' %}" style="display:none;">
+     {% csrf_token %}
+   </form>
+  </p>
+  
 {% else %}
   <a href="{% url 'login' %}">ログイン</a> |
   <a href="{% url 'signup' %}">新規登録</a>
@@ -15,5 +25,13 @@
 <hr>
 
 {% block content %}{% endblock %}
+
+{% block show_gif %}
+<div class="corner-gif">
+  <img src="{% static 'core/blue-archive-alice.gif' %}" alt="alice">
+  <span class="tooltip">I am Alice!</span>
+</div>
+{% endblock %}
+
 </body>
 </html>

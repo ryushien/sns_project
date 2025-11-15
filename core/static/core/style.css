@@ -1,0 +1,103 @@
+
+/* 全体レイアウト */
+.auth-container {
+    max-width: 420px;
+    margin: 40px auto;
+    padding: 24px 28px;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.auth-title {
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+/* 画像 */
+.auth-image img {
+    display: block;
+    margin: 0 auto 16px;
+    max-width: 260px;
+    border-radius: 8px;
+}
+
+/* フォーム */
+.auth-form .form-row {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 16px;
+}
+
+.auth-form label {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.auth-form input {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #cccccc;
+    font-size: 14px;
+}
+
+.auth-form input:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+}
+
+/* ヘルプテキスト & エラー */
+.help-text {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #666666;
+}
+
+.error-text {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #c53030;
+}
+
+/* ボタン */
+.btn-primary {
+    width: 100%;
+    padding: 10px 0;
+    border: none;
+    border-radius: 6px;
+    background: #4f46e5;
+    color: #ffffff;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+}
+
+/* ページの一番下・右寄せで表示する Alice */
+.corner-gif {
+    width: 30px;                /* サイズ小さめ */
+    margin: 20px 20px 40px auto;/* 右側に寄せる */
+    text-align: center;
+    display: block;
+}
+
+.corner-gif img {
+    width: 100%;
+    height: auto;
+}
+
+/* ツールチップ（コメント） */
+.corner-gif .tooltip {
+    display: none;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #333;
+}
+
+.corner-gif:hover .tooltip {
+    display: block;
+}
+

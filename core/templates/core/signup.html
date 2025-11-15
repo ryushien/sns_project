@@ -1,16 +1,37 @@
 {% extends 'core/base.html' %}
 {% load static %}
+
+{% block body_class %}signup-background{% endblock %}
+
 {% block content %}
-<h2>新規登録</h2>
+<div class="auth-container">
+  <h2 class="auth-title">新規登録</h2>
 
-<div style="margin-bottom: 20px;">
-  <img src="{% static 'core/angry-alice.gif' %}" alt="alice"
-       style="max-width: 250px; display: block;">
+  <div class="auth-image">
+    <img src="{% static 'core/angry-alice.gif' %}" alt="alice">
+  </div>
+
+  <form method="post" class="auth-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    {% for field in form %}
+      <div class="form-row">
+        {{ field.label_tag }}
+        {{ field }}
+
+        {% if field.help_text %}
+          <small class="help-text">{{ field.help_text|safe }}</small>
+        {% endif %}
+
+        {% for error in field.errors %}
+          <div class="error-text">{{ error }}</div>
+        {% endfor %}
+      </div>
+    {% endfor %}
+
+    <button type="submit" class="btn-primary">登録</button>
+  </form>
 </div>
-
-<form method="post">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit">登録</button>
-</form>
 {% endblock %}
+
