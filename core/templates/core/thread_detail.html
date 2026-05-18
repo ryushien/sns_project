@@ -30,12 +30,6 @@
         </div>
       {% endif %}
 
-      {% if post.video %}
-        <div>
-          <video src="{{ post.video.url }}" controls style="max-width:400px; max-height:400px;"></video>
-        </div>
-      {% endif %}
-
     </li>
   {% empty %}
     <li>まだレスはありません。</li>
@@ -51,9 +45,6 @@
 
   <p>
     画像：<input type="file" name="image" accept="image/*">
-  </p>
-  <p>
-    動画：<input type="file" name="video" accept="video/*">
   </p>
 
   <button type="submit">投稿</button>
