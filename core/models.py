@@ -17,7 +17,7 @@ class Post(models.Model):
 
     # ★ ここから追加
     image = models.ImageField(upload_to='post_images/', blank=True, null=True)
-    video = models.FileField(upload_to='post_videos/', blank=True, null=True)
+    #video = models.FileField(upload_to='post_videos/', blank=True, null=True)
     # ★ ここまで追加
 
     created_at = models.DateTimeField(auto_now_add=True)

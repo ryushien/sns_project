@@ -50,7 +50,7 @@ def thread_new(request):
         title = request.POST.get('title')
         content = request.POST.get('content')
         image = request.FILES.get('image')
-        video = request.FILES.get('video')
+        #video = request.FILES.get('video')
 
         if title and content:
             # スレッド本体
@@ -64,7 +64,6 @@ def thread_new(request):
                 author=request.user,
                 content=content,
                 image=image,   
-                video=video, 
             )
             return redirect('thread_detail', thread_id=thread.id)
 
@@ -104,15 +103,14 @@ def post_reply(request, thread_id):
         content = request.POST.get('content')
 
         image = request.FILES.get('image')
-        video = request.FILES.get('video')
+        #video = request.FILES.get('video')
 
-        if content or image or video:
+        if content or image:
             Post.objects.create(
                 thread=thread,
                 author=request.user,
                 content=content or "",
                 image=image,
-                video=video,
             )
         return redirect('thread_detail', thread_id=thread.id)
 
