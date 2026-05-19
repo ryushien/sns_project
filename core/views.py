@@ -30,7 +30,6 @@ def signup_view(request):
             )
 
             return redirect('login')
-
     else:
         form = UserCreationForm()
 
@@ -40,18 +39,13 @@ def signup_view(request):
 @login_required
 def thread_list(request):
     threads = Thread.objects.all().order_by('-created_at')
-
-    return render(request, 'core/index.html', {
-        'threads': threads
-    })
+    return render(request, 'core/index.html', {'threads': threads})
 
 
 @login_required
 @ratelimit(key='user', rate='10/m', method='POST', block=True)
 def thread_new(request):
-
     if request.method == 'POST':
-
         if getattr(request, 'limited', False):
             return render(request, 'core/post_create.html', {
                 'error': 'スレ立てが多すぎます。1分後に再試行してください。'
@@ -62,7 +56,6 @@ def thread_new(request):
         image = request.FILES.get('image')
 
         if title and content:
-
             thread = Thread.objects.create(
                 title=title,
                 created_by=request.user
@@ -75,11 +68,8 @@ def thread_new(request):
                     content=content,
                     image=image,
                 )
-
             except ValidationError as e:
-
                 thread.delete()
-
                 return render(request, 'core/post_create.html', {
                     'error': e.messages[0]
                 })
@@ -103,7 +93,6 @@ def thread_new(request):
 
 @login_required
 def thread_detail(request, thread_id):
-
     thread = get_object_or_404(Thread, id=thread_id)
     posts = thread.posts.all().order_by('created_at')
 
@@ -116,15 +105,11 @@ def thread_detail(request, thread_id):
 @login_required
 @ratelimit(key='user', rate='20/m', method='POST', block=True)
 def post_reply(request, thread_id):
-
     thread = get_object_or_404(Thread, id=thread_id)
 
     if request.method == 'POST':
-
         if getattr(request, 'limited', False):
-
             posts = thread.posts.all().order_by('created_at')
-
             return render(request, 'core/thread_detail.html', {
                 'thread': thread,
                 'posts': posts,
@@ -135,7 +120,6 @@ def post_reply(request, thread_id):
         image = request.FILES.get('image')
 
         if content or image:
-
             try:
                 Post.objects.create(
                     thread=thread,
@@ -143,11 +127,8 @@ def post_reply(request, thread_id):
                     content=content or "",
                     image=image,
                 )
-
             except ValidationError as e:
-
                 posts = thread.posts.all().order_by('created_at')
-
                 return render(request, 'core/thread_detail.html', {
                     'thread': thread,
                     'posts': posts,
@@ -181,11 +162,9 @@ from django.utils.decorators import method_decorator
     name='dispatch'
 )
 class RateLimitedLoginView(LoginView):
-
     template_name = 'core/login.html'
 
     def post(self, request, *args, **kwargs):
-
         if getattr(request, 'limited', False):
             messages.error(
                 request,
@@ -193,4 +172,18 @@ class RateLimitedLoginView(LoginView):
             )
             return self.get(request, *args, **kwargs)
 
-        return super().post(request, *args, **kwargs)
+        response = super().post(request, *args, **kwargs)
+
+        if request.user.is_authenticated:
+            send_mail(
+                subject="【掲示板】ログイン通知",
+                message=(
+                    f"ユーザーがログインしました。\n\n"
+                    f"ユーザー名: {request.user.username}"
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[settings.ADMIN_NOTIFY_EMAIL],
+                fail_silently=True,
+            )
+
+        return response
