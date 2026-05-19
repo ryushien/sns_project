@@ -2,13 +2,14 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 
-from .models import Thread, Post  # ★ ここを変更：Thread も読み込む
+from .models import Thread, Post
 
 try:
-    from ratelimit.decorators import ratelimit           # 通常はこちら
+    from ratelimit.decorators import ratelimit
 except ImportError:
-    from django_ratelimit.decorators import ratelimit    # 環境によってはこちら
+    from django_ratelimit.decorators import ratelimit
 
 
 def signup_view(request):
@@ -22,57 +23,51 @@ def signup_view(request):
     return render(request, 'core/signup.html', {'form': form})
 
 
-# -----------------------------
-# 2ch 風：スレッド一覧
-# -----------------------------
 @login_required
 def thread_list(request):
     threads = Thread.objects.all().order_by('-created_at')
-    return render(request, 'core/index.html', {  # ★ index.html をスレ一覧に使う
+    return render(request, 'core/index.html', {
         'threads': threads
     })
 
 
-# -----------------------------
-# 新規スレッド作成（スレ立て＋>>1）
-# -----------------------------
 @login_required
 @ratelimit(key='user', rate='10/m', method='POST', block=True)
 def thread_new(request):
     if request.method == 'POST':
         if getattr(request, 'limited', False):
-            return render(
-                request,
-                'core/post_create.html',
-                {'error': 'スレ立てが多すぎます。1分後に再試行してください。'}
-            )
+            return render(request, 'core/post_create.html', {
+                'error': 'スレ立てが多すぎます。1分後に再試行してください。'
+            })
 
         title = request.POST.get('title')
         content = request.POST.get('content')
         image = request.FILES.get('image')
-        #video = request.FILES.get('video')
 
         if title and content:
-            # スレッド本体
             thread = Thread.objects.create(
                 title=title,
                 created_by=request.user
             )
-            # >>1 の投稿
-            Post.objects.create(
-                thread=thread,
-                author=request.user,
-                content=content,
-                image=image,   
-            )
+
+            try:
+                Post.objects.create(
+                    thread=thread,
+                    author=request.user,
+                    content=content,
+                    image=image,
+                )
+            except ValidationError as e:
+                thread.delete()
+                return render(request, 'core/post_create.html', {
+                    'error': e.messages[0]
+                })
+
             return redirect('thread_detail', thread_id=thread.id)
 
     return render(request, 'core/post_create.html')
 
 
-# -----------------------------
-# スレッド詳細（レス一覧）
-# -----------------------------
 @login_required
 def thread_detail(request, thread_id):
     thread = get_object_or_404(Thread, id=thread_id)
@@ -83,9 +78,6 @@ def thread_detail(request, thread_id):
     })
 
 
-# -----------------------------
-# レス投稿
-# -----------------------------
 @login_required
 @ratelimit(key='user', rate='20/m', method='POST', block=True)
 def post_reply(request, thread_id):
@@ -101,27 +93,32 @@ def post_reply(request, thread_id):
             })
 
         content = request.POST.get('content')
-
         image = request.FILES.get('image')
-        #video = request.FILES.get('video')
 
         if content or image:
-            Post.objects.create(
-                thread=thread,
-                author=request.user,
-                content=content or "",
-                image=image,
-            )
+            try:
+                Post.objects.create(
+                    thread=thread,
+                    author=request.user,
+                    content=content or "",
+                    image=image,
+                )
+            except ValidationError as e:
+                posts = thread.posts.all().order_by('created_at')
+                return render(request, 'core/thread_detail.html', {
+                    'thread': thread,
+                    'posts': posts,
+                    'error': e.messages[0]
+                })
+
         return redirect('thread_detail', thread_id=thread.id)
 
     return redirect('thread_detail', thread_id=thread.id)
 
 
-# -----------------------------
-# ログイン制限付き LoginView（そのまま）
-# -----------------------------
 from django.contrib.auth.views import LoginView
 from django.utils.decorators import method_decorator
+
 
 @method_decorator(
     ratelimit(key='ip', rate='5/m', method='POST', block=True),
