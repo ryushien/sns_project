@@ -187,7 +187,7 @@ class RateLimitedLoginView(LoginView):
                 ),
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[settings.ADMIN_NOTIFY_EMAIL],
-                fail_silently=False,
+                fail_silently=True,
             )
 
         return response
