@@ -6,6 +6,8 @@ from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.conf import settings
 
+from django.contrib.auth import get_user
+
 from .models import Thread, Post
 
 try:
@@ -174,12 +176,14 @@ class RateLimitedLoginView(LoginView):
 
         response = super().post(request, *args, **kwargs)
 
-        if request.user.is_authenticated:
+        user=get_user(request)
+
+        if user.is_authenticated:
             send_mail(
                 subject="【掲示板】ログイン通知",
                 message=(
                     f"ユーザーがログインしました。\n\n"
-                    f"ユーザー名: {request.user.username}"
+                    f"ユーザー名: {user.username}"
                 ),
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[settings.ADMIN_NOTIFY_EMAIL],
