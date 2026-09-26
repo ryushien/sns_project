@@ -13,7 +13,7 @@
         {{ thread.title }}
       </a>
       （作成者: {{ thread.created_by.username }}
-       / レス {{ thread.posts.count }}
+       / レス {{ thread.post_count }}
        / {{ thread.created_at|date:"Y/m/d H:i" }}）
     </li>
   {% empty %}

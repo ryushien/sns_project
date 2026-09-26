@@ -1,9 +1,11 @@
 {% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Mini SNS</title>
-    <link rel="stylesheet" href="{% static 'core/style.css' %}?v={{ now }}">
+    <link rel="stylesheet" href="{% static 'core/style.css' %}">
 </head>
 <body class="{% block body_class %}{% endblock %}">
 
@@ -23,6 +25,12 @@
   <a href="{% url 'signup' %}">新規登録</a>
 {% endif %}
 <hr>
+
+{% if messages %}
+  <ul class="messages">
+    {% for message in messages %}<li class="{{ message.tags }}">{{ message }}</li>{% endfor %}
+  </ul>
+{% endif %}
 
 {% block content %}{% endblock %}
 
