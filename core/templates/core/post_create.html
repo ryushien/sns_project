@@ -1,32 +1,37 @@
 {% extends 'core/base.html' %}
 
-{% block show_gif %}{% endblock %}
+{% block title %}新規スレッド | Mini SNS{% endblock %}
 
 {% block content %}
-<h2>新規スレッド作成</h2>
+<p class="meta"><a href="{% url 'thread_list' %}">← スレッド一覧</a></p>
 
-{% if error %}
-  <p style="color:red;">{{ error }}</p>
-{% endif %}
+<section class="card">
+  <h1>新規スレッド</h1>
 
-<form method="post" enctype="multipart/form-data">
-  {% csrf_token %}
+  {% if error %}
+    <div class="alert alert-error" role="alert">{{ error }}</div>
+  {% endif %}
 
-  <p>
-    タイトル：<br>
-    <input type="text" name="title" size="60" required>
-  </p>
-
-  <p>
-    本文（>>1）：<br>
-    <textarea name="content" rows="4" cols="60" required></textarea>
-  </p>
-
-  <p>
-    画像：<input type="file" name="image" accept="image/*">
-  </p>
-
-  <button type="submit">スレッドを立てる</button>
-</form>
-
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="field">
+      <label for="id_title">タイトル</label>
+      <input id="id_title" type="text" name="title" maxlength="200" required
+             value="{{ form.title.value|default:'' }}">
+    </div>
+    <div class="field">
+      <label for="id_content">本文（1レス目）</label>
+      <textarea id="id_content" name="content" maxlength="2000" required>{{ form.content.value|default:'' }}</textarea>
+    </div>
+    <div class="field">
+      <label for="id_image">画像（任意）</label>
+      <input id="id_image" type="file" name="image" accept="image/jpeg,image/png,image/gif,image/webp">
+      <span class="help-text">jpg / png / gif / webp、5MBまで</span>
+    </div>
+    <div class="form-actions">
+      <a class="btn btn-ghost" href="{% url 'thread_list' %}">キャンセル</a>
+      <button type="submit" class="btn btn-primary">スレッドを立てる</button>
+    </div>
+  </form>
+</section>
 {% endblock %}

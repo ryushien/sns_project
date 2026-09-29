@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.views import LoginView
+from django.contrib.staticfiles import finders
 from django.db import transaction
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
@@ -57,7 +58,7 @@ def thread_new(request):
 
     form = ThreadForm(request.POST, request.FILES)
     if not form.is_valid():
-        return render(request, "core/post_create.html", {"error": first_error(form)}, status=400)
+        return render(request, "core/post_create.html", {"error": first_error(form), "form": form}, status=400)
 
     # スレッドと >>1 はセットで作る（途中で失敗したら両方なかったことにする）
     with transaction.atomic():
@@ -76,12 +77,13 @@ def thread_new(request):
     return redirect("thread_detail", thread_id=thread.id)
 
 
-def _render_thread(request, thread, error=None, status=200):
+def _render_thread(request, thread, error=None, status=200, form=None):
     posts = thread.posts.select_related("author").order_by("created_at")
     return render(request, "core/thread_detail.html", {
         "thread": thread,
         "posts": posts,
         "error": error,
+        "form": form,
     }, status=status)
 
 
@@ -102,7 +104,7 @@ def post_reply(request, thread_id):
 
     form = PostForm(request.POST, request.FILES)
     if not form.is_valid():
-        return _render_thread(request, thread, first_error(form), status=400)
+        return _render_thread(request, thread, first_error(form), status=400, form=form)
 
     post = form.save(commit=False)
     post.thread = thread
@@ -124,6 +126,14 @@ def post_reply(request, thread_id):
 @method_decorator(ratelimit(key="post:username", rate="5/m", method="POST", block=False), name="dispatch")
 class RateLimitedLoginView(LoginView):
     template_name = "core/login.html"
+    # 音源ファイル（フリー素材）を置くと、ログイン画面に BGM ボタンが出る
+    bgm_path = "core/bgm.mp3"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["bgm_path"] = self.bgm_path
+        context["has_bgm"] = finders.find(self.bgm_path) is not None
+        return context
 
     def post(self, request, *args, **kwargs):
         if getattr(request, "limited", False):

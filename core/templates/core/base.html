@@ -1,45 +1,51 @@
-{% load static %}
-<!DOCTYPE html>
+{% load static %}<!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Mini SNS</title>
-    <link rel="stylesheet" href="{% static 'core/style.css' %}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Mini SNS{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'core/style.css' %}">
 </head>
 <body class="{% block body_class %}{% endblock %}">
+  {% block background %}{% endblock %}
 
-{% if user.is_authenticated %}
-  <p>こんにちは {{ user.username }} さん！
-  <a href="#" onclick="document.getElementById('logout-form').submit(); return false;">
-     ログアウト
-   </a>
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="{% url 'thread_list' %}">Mini SNS</a>
+      <nav class="nav">
+        {% if user.is_authenticated %}
+          <span class="user">{{ user.username }} さん</span>
+          <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn-link">ログアウト</button>
+          </form>
+        {% else %}
+          <a href="{% url 'login' %}">ログイン</a>
+          <a class="btn btn-primary" href="{% url 'signup' %}">新規登録</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
 
-   <form id="logout-form" method="post" action="{% url 'logout' %}" style="display:none;">
-     {% csrf_token %}
-   </form>
-  </p>
-  
-{% else %}
-  <a href="{% url 'login' %}">ログイン</a> |
-  <a href="{% url 'signup' %}">新規登録</a>
-{% endif %}
-<hr>
+  <main class="site-main {% block main_class %}{% endblock %}">
+    <div class="container">
+      {% if messages %}
+        <ul class="messages">
+          {% for message in messages %}<li class="{{ message.tags }}">{{ message }}</li>{% endfor %}
+        </ul>
+      {% endif %}
 
-{% if messages %}
-  <ul class="messages">
-    {% for message in messages %}<li class="{{ message.tags }}">{{ message }}</li>{% endfor %}
-  </ul>
-{% endif %}
+      {% block content %}{% endblock %}
+    </div>
+  </main>
 
-{% block content %}{% endblock %}
+  <footer class="site-footer">
+    <div class="container">
+      Mini SNS — Django で作った掲示板
+      {% block footer_extra %}{% endblock %}
+    </div>
+  </footer>
 
-{% block show_gif %}
-<div class="corner-gif">
-  <img src="{% static 'core/blue-archive-alice.gif' %}" alt="alice">
-  <span class="tooltip">You caught me!</span>
-</div>
-{% endblock %}
-
+  {% block scripts %}{% endblock %}
 </body>
 </html>

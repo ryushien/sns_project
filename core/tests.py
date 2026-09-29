@@ -78,7 +78,7 @@ class ThreadTests(BaseTestCase):
         Post.objects.create(thread=self.thread, author=self.user, content="a")
         Post.objects.create(thread=self.thread, author=self.user, content="b")
         res = self.client.get(reverse("thread_list"))
-        self.assertContains(res, "レス 2")
+        self.assertContains(res, "2 レス")
 
 
 class ImageUploadTests(BaseTestCase):
@@ -150,3 +150,16 @@ class RateLimitTests(BaseTestCase):
         self.client.logout()
         res = self.client.post(reverse("login"), {"username": "alice", "password": "S3cure-pass-123"})
         self.assertRedirects(res, "/")
+
+
+class TemplateTests(BaseTestCase):
+    def test_reply_keeps_text_on_error(self):
+        """エラーのときも入力した本文が消えない"""
+        res = self.reply(content="消えないで", image=make_image("a.png", "BMP"))
+        self.assertContains(res, "消えないで", status_code=400)
+
+    def test_login_page_hides_bgm_button_without_audio(self):
+        self.client.logout()
+        res = self.client.get(reverse("login"))
+        self.assertEqual(res.status_code, 200)
+        self.assertNotContains(res, "bgm-toggle")

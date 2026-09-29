@@ -1,54 +1,61 @@
 {% extends 'core/base.html' %}
 
-{% block show_gif %}{% endblock %}
+{% block title %}{{ thread.title }} | Mini SNS{% endblock %}
 
 {% block content %}
-<h2>{{ thread.title }}</h2>
-<p>
-  作成者: {{ thread.created_by.username }}
-  / 作成日時: {{ thread.created_at|date:"Y/m/d H:i" }}
-</p>
+<p class="meta"><a href="{% url 'thread_list' %}">← スレッド一覧</a></p>
 
-<hr>
+<div class="thread-head">
+  <h1>{{ thread.title }}</h1>
+  <div class="meta">{{ thread.created_by.username }} ・ {{ thread.created_at|date:"Y/m/d H:i" }}</div>
+</div>
 
-{% if error %}
-  <p style="color:red;">{{ error }}</p>
-{% endif %}
-
-<ol>
+<ol class="post-list">
   {% for post in posts %}
-    <li>
-      <p>
-        <strong>{{ post.author.username }}</strong>
-        （{{ post.created_at|date:"Y/m/d H:i" }}）
-      </p>
-      <p>{{ post.content|linebreaksbr }}</p>
-
+    <li class="card post" id="post-{{ forloop.counter }}">
+      <div class="post-header">
+        <span class="post-no">{{ forloop.counter }}</span>
+        <span class="post-author">{{ post.author.username }}</span>
+        <time class="meta" datetime="{{ post.created_at|date:'c' }}">{{ post.created_at|date:"Y/m/d H:i" }}</time>
+      </div>
+      {% if post.content %}
+        <div class="post-body">{{ post.content|linebreaksbr }}</div>
+      {% endif %}
       {% if post.image %}
-        <div>
-          <img src="{{ post.image.url }}" style="max-width:400px; max-height:400px;">
+        <div class="post-image">
+          <a href="{{ post.image.url }}" target="_blank" rel="noopener">
+            <img src="{{ post.image.url }}" alt="{{ post.author.username }} さんの投稿画像" loading="lazy">
+          </a>
         </div>
       {% endif %}
-
     </li>
   {% empty %}
-    <li>まだレスはありません。</li>
+    <li class="card empty">まだレスはありません。</li>
   {% endfor %}
 </ol>
 
-<hr>
+<section class="card" id="reply">
+  <h2>レスを書く</h2>
 
-<h3>レスを書く</h3>
-<form method="post" action="{% url 'post_reply' thread.id %}" enctype="multipart/form-data">
-  {% csrf_token %}
-  <textarea name="content" rows="4" cols="60" required></textarea><br>
+  {% if error %}
+    <div class="alert alert-error" role="alert">{{ error }}</div>
+  {% endif %}
 
-  <p>
-    画像：<input type="file" name="image" accept="image/*">
-  </p>
-
-  <button type="submit">投稿</button>
-</form>
-
-<p><a href="{% url 'thread_list' %}">スレッド一覧に戻る</a></p>
+  <form method="post" action="{% url 'post_reply' thread.id %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="field">
+      <label for="id_content">本文</label>
+      <textarea id="id_content" name="content" maxlength="2000"
+                placeholder="本文か画像のどちらかがあれば投稿できます">{{ form.content.value|default:'' }}</textarea>
+    </div>
+    <div class="field">
+      <label for="id_image">画像（任意）</label>
+      <input id="id_image" type="file" name="image" accept="image/jpeg,image/png,image/gif,image/webp">
+      <span class="help-text">jpg / png / gif / webp、5MBまで</span>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">投稿する</button>
+    </div>
+  </form>
+</section>
 {% endblock %}

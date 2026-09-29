@@ -1,37 +1,18 @@
 {% extends 'core/base.html' %}
-{% load static %}
 
-{% block body_class %}signup-background{% endblock %}
+{% block title %}新規登録 | Mini SNS{% endblock %}
 
 {% block content %}
-<div class="auth-container">
-  <h2 class="auth-title">新規登録</h2>
+<section class="card form-card">
+  <h1>新規登録</h1>
+  <p class="lead">ユーザー名とパスワードだけで始められます</p>
 
-  <div class="auth-image">
-    <img src="{% static 'core/angry-alice.gif' %}" alt="alice">
-  </div>
-
-  <form method="post" class="auth-form">
+  <form method="post" novalidate>
     {% csrf_token %}
-    {{ form.non_field_errors }}
-
-    {% for field in form %}
-      <div class="form-row">
-        {{ field.label_tag }}
-        {{ field }}
-
-        {% if field.help_text %}
-          <small class="help-text">{{ field.help_text|safe }}</small>
-        {% endif %}
-
-        {% for error in field.errors %}
-          <div class="error-text">{{ error }}</div>
-        {% endfor %}
-      </div>
-    {% endfor %}
-
-    <button type="submit" class="btn-primary">登録</button>
+    {% include 'core/_form_fields.html' %}
+    <button type="submit" class="btn btn-primary btn-block">登録する</button>
   </form>
-</div>
-{% endblock %}
 
+  <p class="form-foot">アカウントをお持ちの方は <a href="{% url 'login' %}">ログイン</a></p>
+</section>
+{% endblock %}
