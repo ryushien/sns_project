@@ -46,10 +46,25 @@ class BaseTestCase(TestCase):
 
 
 class AccessControlTests(BaseTestCase):
-    def test_anonymous_is_redirected_to_login(self):
+    def test_anonymous_can_read_list_and_thread(self):
+        """閲覧はログインなしでもできる"""
+        Post.objects.create(thread=self.thread, author=self.user, content="読めるレス")
         self.client.logout()
-        res = self.client.get(reverse("thread_list"))
-        self.assertRedirects(res, f"{reverse('login')}?next=/")
+        self.assertContains(self.client.get(reverse("thread_list")), "テストスレ")
+        res = self.client.get(reverse("thread_detail", args=[self.thread.id]))
+        self.assertContains(res, "読めるレス")
+        self.assertContains(res, "レスを書くにはログインが必要です")
+        self.assertNotContains(res, 'id="reply"')
+
+    def test_anonymous_cannot_post(self):
+        """投稿・スレ立てはログインが必要"""
+        self.client.logout()
+        res = self.client.post(reverse("post_reply", args=[self.thread.id]), {"content": "x"})
+        self.assertEqual(res.status_code, 302)
+        self.assertTrue(res["Location"].startswith(reverse("login")))
+        res = self.client.get(reverse("thread_new"))
+        self.assertTrue(res["Location"].startswith(reverse("login")))
+        self.assertEqual(Post.objects.count(), 0)
 
     def test_reply_requires_post(self):
         res = self.client.get(reverse("post_reply", args=[self.thread.id]))
@@ -163,3 +178,37 @@ class TemplateTests(BaseTestCase):
         res = self.client.get(reverse("login"))
         self.assertEqual(res.status_code, 200)
         self.assertNotContains(res, "bgm-toggle")
+
+
+class PaginationTests(BaseTestCase):
+    def test_thread_list_is_paginated_by_20(self):
+        for i in range(25):
+            Thread.objects.create(title=f"スレ{i:02d}", created_by=self.user)
+        res = self.client.get(reverse("thread_list"))
+        self.assertEqual(len(res.context["threads"]), 20)
+        self.assertContains(res, "1 / 2")
+        res = self.client.get(reverse("thread_list") + "?page=2")
+        self.assertEqual(len(res.context["threads"]), 6)  # 25 + setUp の1件
+
+    def test_invalid_page_number_does_not_error(self):
+        for value in ["abc", "999", "-1"]:
+            res = self.client.get(reverse("thread_list") + f"?page={value}")
+            self.assertEqual(res.status_code, 200)
+
+    def test_post_numbers_continue_across_pages(self):
+        Post.objects.bulk_create(
+            [Post(thread=self.thread, author=self.user, content=f"レス{i}") for i in range(1, 106)]
+        )
+        res = self.client.get(reverse("thread_detail", args=[self.thread.id]) + "?page=2")
+        self.assertEqual(len(res.context["posts"]), 5)
+        self.assertContains(res, 'id="post-101"')
+        self.assertContains(res, 'id="post-105"')
+        self.assertNotContains(res, 'id="post-1"')
+
+    def test_reply_redirects_to_new_post_on_last_page(self):
+        Post.objects.bulk_create(
+            [Post(thread=self.thread, author=self.user, content="x") for _ in range(100)]
+        )
+        res = self.reply(content="101番目")
+        url = reverse("thread_detail", args=[self.thread.id])
+        self.assertRedirects(res, f"{url}?page=2#post-101", fetch_redirect_response=False)

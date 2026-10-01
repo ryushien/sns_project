@@ -3,9 +3,11 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.views import LoginView
 from django.contrib.staticfiles import finders
+from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
@@ -13,6 +15,9 @@ from django_ratelimit.decorators import ratelimit
 from .forms import PostForm, ThreadForm, first_error
 from .models import Post, Thread
 from .utils import notify_admin
+
+THREADS_PER_PAGE = 20
+POSTS_PER_PAGE = 100
 
 # block=False にして、制限に掛かったら request.limited を見て
 # エラーメッセージ付きで画面を返す（block=True だと即403になりメッセージが出ない）
@@ -35,14 +40,16 @@ def signup_view(request):
     return render(request, "core/signup.html", {"form": form})
 
 
-@login_required
 def thread_list(request):
+    """スレッド一覧。閲覧はログインなしでもできる。"""
     threads = (
         Thread.objects.select_related("created_by")
         .annotate(post_count=Count("posts"))
-        .order_by("-created_at")
+        .order_by("-created_at", "-id")
     )
-    return render(request, "core/index.html", {"threads": threads})
+    # get_page は ?page=abc や範囲外の番号でもエラーにせず、最初/最後のページを返す
+    page_obj = Paginator(threads, THREADS_PER_PAGE).get_page(request.GET.get("page"))
+    return render(request, "core/index.html", {"page_obj": page_obj, "threads": page_obj.object_list})
 
 
 @login_required
@@ -77,20 +84,28 @@ def thread_new(request):
     return redirect("thread_detail", thread_id=thread.id)
 
 
-def _render_thread(request, thread, error=None, status=200, form=None):
-    posts = thread.posts.select_related("author").order_by("created_at")
+def _post_paginator(thread):
+    posts = thread.posts.select_related("author").order_by("created_at", "id")
+    return Paginator(posts, POSTS_PER_PAGE)
+
+
+def _render_thread(request, thread, page=None, error=None, status=200, form=None):
+    paginator = _post_paginator(thread)
+    # エラーで再表示するときは、投稿フォームのある最後のページを出す
+    page_obj = paginator.get_page(page if page is not None else paginator.num_pages)
     return render(request, "core/thread_detail.html", {
         "thread": thread,
-        "posts": posts,
+        "page_obj": page_obj,
+        "posts": page_obj.object_list,
         "error": error,
         "form": form,
     }, status=status)
 
 
-@login_required
 def thread_detail(request, thread_id):
+    """スレッド詳細。閲覧はログインなしでもできる（投稿はログインが必要）。"""
     thread = get_object_or_404(Thread.objects.select_related("created_by"), id=thread_id)
-    return _render_thread(request, thread)
+    return _render_thread(request, thread, page=request.GET.get("page", 1))
 
 
 @login_required
@@ -100,11 +115,11 @@ def post_reply(request, thread_id):
     thread = get_object_or_404(Thread, id=thread_id)
 
     if getattr(request, "limited", False):
-        return _render_thread(request, thread, "投稿が多すぎます。1分後に再試行してください。", status=429)
+        return _render_thread(request, thread, error="投稿が多すぎます。1分後に再試行してください。", status=429)
 
     form = PostForm(request.POST, request.FILES)
     if not form.is_valid():
-        return _render_thread(request, thread, first_error(form), status=400, form=form)
+        return _render_thread(request, thread, error=first_error(form), status=400, form=form)
 
     post = form.save(commit=False)
     post.thread = thread
@@ -116,7 +131,10 @@ def post_reply(request, thread_id):
         f"新しいレスが投稿されました。\n\nスレッド: {thread.title}\n"
         f"投稿者: {request.user.username}\n本文: {post.content or '[画像のみ]'}",
     )
-    return redirect("thread_detail", thread_id=thread.id)
+    # 自分の投稿が載っている最後のページの、その投稿の位置へ移動する
+    paginator = _post_paginator(thread)
+    url = reverse("thread_detail", args=[thread.id])
+    return redirect(f"{url}?page={paginator.num_pages}#post-{paginator.count}")
 
 
 # ログインは IP 単位とユーザー名単位の両方で制限する。

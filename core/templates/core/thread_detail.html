@@ -10,11 +10,15 @@
   <div class="meta">{{ thread.created_by.username }} ・ {{ thread.created_at|date:"Y/m/d H:i" }}</div>
 </div>
 
+{% include 'core/_pagination.html' %}
+
 <ol class="post-list">
   {% for post in posts %}
-    <li class="card post" id="post-{{ forloop.counter }}">
+    {# レス番号はページをまたいで通し番号にする（2ページ目は101から） #}
+    {% with no=page_obj.start_index|add:forloop.counter0 %}
+    <li class="card post" id="post-{{ no }}">
       <div class="post-header">
-        <span class="post-no">{{ forloop.counter }}</span>
+        <span class="post-no">{{ no }}</span>
         <span class="post-author">{{ post.author.username }}</span>
         <time class="meta" datetime="{{ post.created_at|date:'c' }}">{{ post.created_at|date:"Y/m/d H:i" }}</time>
       </div>
@@ -29,11 +33,15 @@
         </div>
       {% endif %}
     </li>
+    {% endwith %}
   {% empty %}
     <li class="card empty">まだレスはありません。</li>
   {% endfor %}
 </ol>
 
+{% include 'core/_pagination.html' %}
+
+{% if user.is_authenticated %}
 <section class="card" id="reply">
   <h2>レスを書く</h2>
 
@@ -58,4 +66,11 @@
     </div>
   </form>
 </section>
+{% else %}
+<section class="card login-prompt">
+  <p>レスを書くにはログインが必要です。</p>
+  <a class="btn btn-primary" href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}">ログイン</a>
+  <a class="btn btn-ghost" href="{% url 'signup' %}">新規登録</a>
+</section>
+{% endif %}
 {% endblock %}
