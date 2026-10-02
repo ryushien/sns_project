@@ -1,0 +1,18 @@
+{# ページ送り。page_obj.has_other_pages のときだけ表示 #}
+{% if page_obj.has_other_pages %}
+  <nav class="pagination" aria-label="ページ送り">
+    {% if page_obj.has_previous %}
+      <a class="btn btn-ghost" href="?page={{ page_obj.previous_page_number }}" rel="prev">← 前へ</a>
+    {% else %}
+      <span class="btn btn-ghost is-disabled" aria-disabled="true">← 前へ</span>
+    {% endif %}
+
+    <span class="page-status">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+
+    {% if page_obj.has_next %}
+      <a class="btn btn-ghost" href="?page={{ page_obj.next_page_number }}" rel="next">次へ →</a>
+    {% else %}
+      <span class="btn btn-ghost is-disabled" aria-disabled="true">次へ →</span>
+    {% endif %}
+  </nav>
+{% endif %}

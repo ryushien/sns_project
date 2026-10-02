@@ -1,23 +1,33 @@
 {% extends 'core/base.html' %}
 
-{% block show_gif %}{% endblock %}
-
 {% block content %}
-<h2>スレッド一覧</h2>
-<a href="{% url 'thread_new' %}">新規スレッド作成</a>
+<div class="page-head">
+  <h1>スレッド一覧</h1>
+  {% if user.is_authenticated %}
+    <a class="btn btn-primary" href="{% url 'thread_new' %}">＋ 新規スレッド</a>
+  {% else %}
+    <a class="btn btn-ghost" href="{% url 'login' %}?next={% url 'thread_new' %}">ログインしてスレッドを立てる</a>
+  {% endif %}
+</div>
 
-<ul>
+<ul class="thread-list">
   {% for thread in threads %}
     <li>
-      <a href="{% url 'thread_detail' thread.id %}">
-        {{ thread.title }}
+      <a class="thread-item" href="{% url 'thread_detail' thread.id %}">
+        <div>
+          <div class="thread-title">{{ thread.title }}</div>
+          <div class="meta">{{ thread.created_by.username }} ・ {{ thread.created_at|date:"Y/m/d H:i" }}</div>
+        </div>
+        <span class="badge">{{ thread.post_count }} レス</span>
       </a>
-      （作成者: {{ thread.created_by.username }}
-       / レス {{ thread.posts.count }}
-       / {{ thread.created_at|date:"Y/m/d H:i" }}）
     </li>
   {% empty %}
-    <li>まだスレッドがありません。</li>
+    <li class="empty">
+      まだスレッドがありません。<br>
+      <a href="{% url 'thread_new' %}">最初のスレッドを立ててみましょう。</a>
+    </li>
   {% endfor %}
 </ul>
+
+{% include 'core/_pagination.html' %}
 {% endblock %}

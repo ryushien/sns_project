@@ -1,9 +1,13 @@
-venv/ 
-__pycache__/ 
-db.sqlite3 
-staticfiles/ 
-venv/
+# Python
 __pycache__/
+*.pyc
+venv/
+.venv/
+
+# ローカルDB・アップロード画像・collectstatic の出力
 db.sqlite3
+media/
 staticfiles/
-db.sqlite3
+
+# 環境変数
+.env
