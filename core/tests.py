@@ -197,6 +197,24 @@ class ExifStripTests(BaseTestCase):
         self.reply(image=make_image("trick.jpg", "PNG"))
         self.assertTrue(Post.objects.get().image.name.endswith(".png"))
 
+    def test_iphone_mpo_jpeg_is_accepted_as_plain_jpeg(self):
+        """iPhone の写真（MPO = 複数画像入り JPEG）も受け付け、1枚目だけの JPEG にする"""
+        exif = Image.Exif()
+        exif[0x8825] = {1: "N", 2: (35.0, 41.0, 22.0)}
+        buf = io.BytesIO()
+        Image.new("RGB", (40, 30), "red").save(
+            buf, format="MPO", save_all=True,
+            append_images=[Image.new("RGB", (20, 15), "gray")], exif=exif.tobytes())
+        self.assertEqual(Image.open(io.BytesIO(buf.getvalue())).format, "MPO")  # 前提
+        res = self.reply(image=SimpleUploadedFile("IMG_5951.jpg", buf.getvalue(), content_type="image/jpeg"))
+        self.assertEqual(res.status_code, 302)
+        post = Post.objects.get()
+        self.assertTrue(post.image.name.endswith(".jpg"))
+        img = stored_image(post)
+        self.assertEqual((img.format, img.size), ("JPEG", (40, 30)))
+        self.assertEqual(getattr(img, "n_frames", 1), 1)
+        self.assert_no_metadata(img)
+
     def test_animated_gif_keeps_all_frames(self):
         frames = [Image.new("RGB", (8, 8), c) for c in ("red", "green", "blue")]
         buf = io.BytesIO()

@@ -38,10 +38,17 @@ def strip_metadata(fileobj):
     fileobj.seek(0)
     img = Image.open(fileobj)
     fmt = img.format
+    if fmt == "MPO":
+        # iPhone などの JPEG は複数画像入りの MPO として開かれる。
+        # 1枚目（本体の写真）だけを残し、ゲインマップ等は捨てて普通の JPEG にする。
+        img.seek(0)
+        fmt = "JPEG"
+        animated = False
+    else:
+        animated = getattr(img, "is_animated", False)
     if fmt not in FORMAT_EXTENSIONS:
         raise ValueError(f"unsupported format: {fmt}")
 
-    animated = getattr(img, "is_animated", False)
     out = io.BytesIO()
 
     if animated:
