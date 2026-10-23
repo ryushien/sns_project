@@ -6,7 +6,8 @@ from .image_sanitize import clean_filename, strip_metadata
 from .models import Post, Thread, validate_image_file
 
 MAX_CONTENT_LENGTH = 2000
-ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG", "GIF", "WEBP"}
+# MPO は iPhone などの JPEG（HDR用のゲインマップ等を同梱した JPEG の拡張形式）
+ALLOWED_IMAGE_FORMATS = {"JPEG", "MPO", "PNG", "GIF", "WEBP"}
 
 
 class PostImageMixin:
