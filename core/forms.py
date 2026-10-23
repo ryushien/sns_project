@@ -1,6 +1,8 @@
 from django import forms
+from django.core.files.base import ContentFile
 from PIL import Image
 
+from .image_sanitize import clean_filename, strip_metadata
 from .models import Post, Thread, validate_image_file
 
 MAX_CONTENT_LENGTH = 2000
@@ -14,6 +16,7 @@ class PostImageMixin:
     - モデルの validate_image_file で拡張子とサイズを確認する
     - さらに実際の画像形式が許可リストにあるかを確認する
       （拡張子だけ .png にしたHTMLや、BMP/TIFFなどを弾く）
+    - 最後に画像を作り直し、EXIF（GPS位置情報など）を取り除いたものを保存させる
     """
 
     def __init__(self, *args, **kwargs):
@@ -37,7 +40,12 @@ class PostImageMixin:
                 image.seek(0)
         if fmt not in ALLOWED_IMAGE_FORMATS:
             raise forms.ValidationError("投稿できる画像は jpg, jpeg, png, gif, webp のみです。")
-        return image
+
+        try:
+            data, fmt = strip_metadata(image)
+        except Exception:
+            raise forms.ValidationError("画像を処理できませんでした。別の画像でお試しください。")
+        return ContentFile(data, name=clean_filename(image.name, fmt))
 
 
 class PostForm(PostImageMixin, forms.ModelForm):
