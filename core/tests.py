@@ -5,6 +5,7 @@ import tempfile
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
+from django.core.management import call_command
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -19,6 +20,23 @@ def make_image(name="test.png", fmt="PNG", size=(10, 10)):
     buf = io.BytesIO()
     Image.new("RGB", size, "red").save(buf, format=fmt)
     return SimpleUploadedFile(name, buf.getvalue(), content_type=f"image/{fmt.lower()}")
+
+
+def make_exif_image(name="photo.jpg", fmt="JPEG", size=(10, 10), orientation=None):
+    """機種名と GPS 座標を埋め込んだ画像を作る（スマホ写真の代わり）。"""
+    exif = Image.Exif()
+    exif[0x010F] = "TestMaker"  # Make
+    exif[0x8825] = {1: "N", 2: (35.0, 41.0, 22.0), 3: "E", 4: (140.0, 1.0, 30.0)}  # GPS
+    if orientation:
+        exif[0x0112] = orientation
+    buf = io.BytesIO()
+    Image.new("RGB", size, "red").save(buf, format=fmt, exif=exif.tobytes())
+    return SimpleUploadedFile(name, buf.getvalue(), content_type=f"image/{fmt.lower()}")
+
+
+def stored_image(post):
+    with post.image.open("rb") as f:
+        return Image.open(io.BytesIO(f.read()))
 
 
 @override_settings(
@@ -137,6 +155,71 @@ class ImageUploadTests(BaseTestCase):
         res = self.reply(content="   ")
         self.assertEqual(res.status_code, 400)
         self.assertEqual(Post.objects.count(), 0)
+
+
+class ExifStripTests(BaseTestCase):
+    """アップロード画像から EXIF（GPS位置情報など）が消えていること"""
+
+    def assert_no_metadata(self, img):
+        exif = img.getexif()
+        self.assertEqual(len(exif), 0, f"EXIF が残っている: {dict(exif)}")
+        self.assertNotIn("exif", img.info)
+
+    def test_exif_is_removed_from_reply_images(self):
+        for name, fmt in [("a.jpg", "JPEG"), ("a.png", "PNG"), ("a.webp", "WEBP")]:
+            with self.subTest(fmt=fmt):
+                src = make_exif_image(name, fmt)
+                self.assertIn(0x8825, Image.open(io.BytesIO(src.read())).getexif())  # 前提: 元にはGPSがある
+                src.seek(0)
+                res = self.reply(content="写真", image=src)
+                self.assertEqual(res.status_code, 302)
+                img = stored_image(Post.objects.latest("id"))
+                self.assertEqual(img.format, fmt)
+                self.assert_no_metadata(img)
+
+    def test_exif_is_removed_when_creating_thread(self):
+        res = self.client.post(reverse("thread_new"), {
+            "title": "写真スレ", "content": "見て", "image": make_exif_image(),
+        })
+        self.assertEqual(res.status_code, 302)
+        self.assert_no_metadata(stored_image(Post.objects.latest("id")))
+
+    def test_orientation_is_applied_before_stripping(self):
+        """Orientation=6（90度回転）の縦長写真は、画素を回転させてから EXIF を消す"""
+        res = self.reply(image=make_exif_image(size=(40, 20), orientation=6))
+        self.assertEqual(res.status_code, 302)
+        img = stored_image(Post.objects.get())
+        self.assertEqual(img.size, (20, 40))
+        self.assert_no_metadata(img)
+
+    def test_extension_matches_real_format(self):
+        """中身が PNG なのに .jpg で送られても、保存名は .png になる"""
+        self.reply(image=make_image("trick.jpg", "PNG"))
+        self.assertTrue(Post.objects.get().image.name.endswith(".png"))
+
+    def test_animated_gif_keeps_all_frames(self):
+        frames = [Image.new("RGB", (8, 8), c) for c in ("red", "green", "blue")]
+        buf = io.BytesIO()
+        frames[0].save(buf, format="GIF", save_all=True, append_images=frames[1:],
+                       duration=100, loop=0, comment=b"secret")
+        res = self.reply(image=SimpleUploadedFile("a.gif", buf.getvalue(), content_type="image/gif"))
+        self.assertEqual(res.status_code, 302)
+        img = stored_image(Post.objects.get())
+        self.assertEqual(img.n_frames, 3)
+        self.assertNotIn("comment", img.info)
+
+    def test_strip_exif_command_cleans_existing_images(self):
+        """修正前に保存された画像も、コマンドで EXIF を消せる"""
+        post = Post.objects.create(thread=self.thread, author=self.user, content="",
+                                   image=make_exif_image("old.jpg"))
+        self.assertIn(0x8825, stored_image(post).getexif())
+        old_name = post.image.name
+
+        call_command("strip_exif", stdout=io.StringIO())
+
+        post.refresh_from_db()
+        self.assert_no_metadata(stored_image(post))
+        self.assertFalse(post.image.storage.exists(old_name) and post.image.name != old_name)
 
 
 class RateLimitTests(BaseTestCase):
