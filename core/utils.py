@@ -7,11 +7,21 @@ logger = logging.getLogger(__name__)
 
 
 def get_client_ip(request):
-    """リバースプロキシ（Render）経由でもクライアントIPを取り出す。
+    """リバースプロキシ経由でもクライアントIPを取り出す。
 
-    X-Forwarded-For は「client, proxy1, proxy2」の形式なので先頭を使う。
-    ヘッダが無い（ローカル実行など）ときは REMOTE_ADDR を使う。
+    - CLIENT_IP_HEADER が設定されている場合（VPS + Nginx）:
+      Nginx が接続元IP（$remote_addr）で上書きしたヘッダを使う。
+      クライアントが送ったヘッダは Nginx で上書きされるので偽装できない。
+    - 設定されていない場合（Render）:
+      X-Forwarded-For は「client, proxy1, proxy2」の形式なので先頭を使う。
+      ヘッダが無い（ローカル実行など）ときは REMOTE_ADDR を使う。
     """
+    if settings.CLIENT_IP_HEADER:
+        ip = request.META.get(settings.CLIENT_IP_HEADER, "").strip()
+        if ip:
+            return ip
+        return request.META.get("REMOTE_ADDR", "")
+
     forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
     if forwarded:
         ip = forwarded.split(",")[0].strip()
