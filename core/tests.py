@@ -2,6 +2,8 @@ import io
 import os
 import shutil
 import tempfile
+import time
+from unittest import mock
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -241,6 +243,14 @@ class ExifStripTests(BaseTestCase):
 
 
 class RateLimitTests(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        # django-ratelimit は「n/分」を時計の区切りで数える。テストの途中で区切りをまたぐと
+        # カウントがリセットされて落ちるので、テスト中は時刻を固定する。
+        patcher = mock.patch("django_ratelimit.core.time.time", return_value=time.time())
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def test_reply_rate_limit_shows_message(self):
         for _ in range(20):
             self.assertEqual(self.reply(content="連投").status_code, 302)
