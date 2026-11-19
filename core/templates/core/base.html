@@ -13,12 +13,10 @@
     <div class="container">
       <a class="brand" href="{% url 'thread_list' %}">Mini SNS</a>
       <nav class="nav">
+        {# ログイン・新規登録への入口は、一覧とスレッドの「ログインすると〜」から #}
         {% if user.is_authenticated %}
           <span class="user">{{ user.username }} さん</span>
           [<form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="btn-link">ログアウト</button></form>]
-        {% else %}
-          [<a href="{% url 'login' %}">ログイン</a>]
-          [<a href="{% url 'signup' %}">新規登録</a>]
         {% endif %}
       </nav>
     </div>
