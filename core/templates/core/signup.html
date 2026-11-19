@@ -3,14 +3,14 @@
 {% block title %}新規登録 | Mini SNS{% endblock %}
 
 {% block content %}
-<section class="card form-card">
-  <h1>新規登録</h1>
-  <p class="lead">ユーザー名とパスワードだけで始められます</p>
+<section class="card form-card reply-box">
+  <h2>新規登録</h2>
+  <p class="lead">ユーザー名とパスワードだけで登録できます。</p>
 
   <form method="post" novalidate>
     {% csrf_token %}
     {% include 'core/_form_fields.html' %}
-    <button type="submit" class="btn btn-primary btn-block">登録する</button>
+    <button type="submit" class="btn btn-primary">登録する</button>
   </form>
 
   <p class="form-foot">アカウントをお持ちの方は <a href="{% url 'login' %}">ログイン</a></p>

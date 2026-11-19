@@ -12,14 +12,13 @@
 {% block main_class %}auth-layer{% endblock %}
 
 {% block content %}
-<section class="card form-card">
-  <h1>ログイン</h1>
-  <p class="lead">おかえりなさい</p>
+<section class="card form-card reply-box">
+  <h2>ログイン</h2>
 
   <form method="post" action="{% url 'login' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}" novalidate>
     {% csrf_token %}
     {% include 'core/_form_fields.html' %}
-    <button type="submit" class="btn btn-primary btn-block">ログイン</button>
+    <button type="submit" class="btn btn-primary">ログイン</button>
   </form>
 
   <p class="form-foot">アカウントがない方は <a href="{% url 'signup' %}">新規登録</a></p>
@@ -29,7 +28,7 @@
       <source src="{% static bgm_path %}" type="audio/mpeg">
     </audio>
     <p class="bgm-control">
-      <button type="button" class="btn btn-ghost" id="bgm-toggle" aria-pressed="false">♪ BGM 再生</button>
+      <button type="button" class="btn" id="bgm-toggle" aria-pressed="false">♪ BGM 再生</button>
     </p>
   {% endif %}
 </section>

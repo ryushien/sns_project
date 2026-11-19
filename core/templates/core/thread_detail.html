@@ -3,12 +3,9 @@
 {% block title %}{{ thread.title }} | Mini SNS{% endblock %}
 
 {% block content %}
-<p class="meta"><a href="{% url 'thread_list' %}">← スレッド一覧</a></p>
+<p class="back"><a href="{% url 'thread_list' %}">&laquo; 掲示板に戻る</a></p>
 
-<div class="thread-head">
-  <h1>{{ thread.title }}</h1>
-  <div class="meta">{{ thread.created_by.username }} ・ {{ thread.created_at|date:"Y/m/d H:i" }}</div>
-</div>
+<h1 class="thread-title">{{ thread.title }}</h1>
 
 {% include 'core/_pagination.html' %}
 
@@ -16,11 +13,9 @@
   {% for post in posts %}
     {# レス番号はページをまたいで通し番号にする（2ページ目は101から） #}
     {% with no=page_obj.start_index|add:forloop.counter0 %}
-    <li class="card post" id="post-{{ no }}">
+    <li class="post" id="post-{{ no }}">
       <div class="post-header">
-        <span class="post-no">{{ no }}</span>
-        <span class="post-author">{{ post.author.username }}</span>
-        <time class="meta" datetime="{{ post.created_at|date:'c' }}">{{ post.created_at|date:"Y/m/d H:i" }}</time>
+        <a class="post-no" href="#post-{{ no }}">{{ no }}</a>：名前：<span class="post-author">{{ post.author.username }}</span>：<time class="post-date" datetime="{{ post.created_at|date:'c' }}">{{ post.created_at|date:"Y/m/d(D) H:i" }}</time>
       </div>
       {% if post.content %}
         <div class="post-body">{{ post.content|linebreaksbr }}</div>
@@ -35,15 +30,15 @@
     </li>
     {% endwith %}
   {% empty %}
-    <li class="card empty">まだレスはありません。</li>
+    <li class="empty">まだレスはありません。</li>
   {% endfor %}
 </ol>
 
 {% include 'core/_pagination.html' %}
 
 {% if user.is_authenticated %}
-<section class="card" id="reply">
-  <h2>レスを書く</h2>
+<section class="card reply-box" id="reply">
+  <h2>書き込む</h2>
 
   {% if error %}
     <div class="alert alert-error" role="alert">{{ error }}</div>
@@ -62,15 +57,13 @@
       <span class="help-text">jpg / png / gif / webp、5MBまで</span>
     </div>
     <div class="form-actions">
-      <button type="submit" class="btn btn-primary">投稿する</button>
+      <button type="submit" class="btn btn-primary">書き込む</button>
     </div>
   </form>
 </section>
 {% else %}
 <section class="card login-prompt">
-  <p>レスを書くにはログインが必要です。</p>
-  <a class="btn btn-primary" href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}">ログイン</a>
-  <a class="btn btn-ghost" href="{% url 'signup' %}">新規登録</a>
+  <p>書き込むには<a href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}">ログイン</a>が必要です。アカウントがなければ<a href="{% url 'signup' %}">新規登録</a>へ。</p>
 </section>
 {% endif %}
 {% endblock %}

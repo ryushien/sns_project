@@ -71,7 +71,7 @@ class AccessControlTests(BaseTestCase):
         self.assertContains(self.client.get(reverse("thread_list")), "テストスレ")
         res = self.client.get(reverse("thread_detail", args=[self.thread.id]))
         self.assertContains(res, "読めるレス")
-        self.assertContains(res, "レスを書くにはログインが必要です")
+        self.assertContains(res, "書き込むには")
         self.assertNotContains(res, 'id="reply"')
 
     def test_anonymous_cannot_post(self):
@@ -111,7 +111,7 @@ class ThreadTests(BaseTestCase):
         Post.objects.create(thread=self.thread, author=self.user, content="a")
         Post.objects.create(thread=self.thread, author=self.user, content="b")
         res = self.client.get(reverse("thread_list"))
-        self.assertContains(res, "2 レス")
+        self.assertContains(res, "(2)")
 
 
 class ImageUploadTests(BaseTestCase):

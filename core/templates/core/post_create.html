@@ -3,10 +3,10 @@
 {% block title %}新規スレッド | Mini SNS{% endblock %}
 
 {% block content %}
-<p class="meta"><a href="{% url 'thread_list' %}">← スレッド一覧</a></p>
+<p class="back"><a href="{% url 'thread_list' %}">&laquo; 掲示板に戻る</a></p>
 
-<section class="card">
-  <h1>新規スレッド</h1>
+<section class="card reply-box">
+  <h2>新規スレッド作成</h2>
 
   {% if error %}
     <div class="alert alert-error" role="alert">{{ error }}</div>
@@ -29,8 +29,8 @@
       <span class="help-text">jpg / png / gif / webp、5MBまで</span>
     </div>
     <div class="form-actions">
-      <a class="btn btn-ghost" href="{% url 'thread_list' %}">キャンセル</a>
       <button type="submit" class="btn btn-primary">スレッドを立てる</button>
+      <a href="{% url 'thread_list' %}">やめる</a>
     </div>
   </form>
 </section>
