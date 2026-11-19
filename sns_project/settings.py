@@ -39,7 +39,10 @@ if RENDER_EXTERNAL_HOSTNAME:
 if DEBUG:
     ALLOWED_HOSTS += ["localhost", "127.0.0.1", "[::1]"]
 
-CSRF_TRUSTED_ORIGINS = ["https://*.onrender.com"]
+# Render のドメインに加えて、環境変数でも追加できるようにする（VPS 用）
+CSRF_TRUSTED_ORIGINS = ["https://*.onrender.com"] + [
+    o for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o
+]
 
 ROOT_URLCONF = "sns_project.urls"
 WSGI_APPLICATION = "sns_project.wsgi.application"
@@ -179,6 +182,11 @@ ADMIN_NOTIFY_EMAIL = os.environ.get("ADMIN_NOTIFY_EMAIL", "")
 # X-Forwarded-For の先頭をクライアントIPとして使う（core/utils.py 参照）。
 # ※先頭はクライアントが偽装できるため、ログインはIPに加えてユーザー名単位でも制限している。
 RATELIMIT_IP_META_KEY = "core.utils.get_client_ip"
+
+# 信頼できるリバースプロキシが設定するヘッダ名（例: VPS の Nginx なら "HTTP_X_REAL_IP"）。
+# 設定すると X-Forwarded-For は使わず、このヘッダの値をクライアントIPとして使う。
+# 空なら従来どおり（Render 用）。
+CLIENT_IP_HEADER = os.environ.get("CLIENT_IP_HEADER", "")
 
 # ---------------------------------------------------------------------------
 # セキュリティ（本番のみ）
