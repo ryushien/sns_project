@@ -18,13 +18,10 @@ def env_bool(name, default=False):
     return os.environ.get(name, str(default)).lower() in ("1", "true", "yes")
 
 
-# Render上で動いているか（Renderが自動で RENDER=true を設定する）
-IS_RENDER = "RENDER" in os.environ
-
 # ---------------------------------------------------------------------------
 # 基本設定
 # ---------------------------------------------------------------------------
-DEBUG = env_bool("DEBUG", default=not IS_RENDER)
+DEBUG = env_bool("DEBUG", default=False)
 
 if DEBUG:
     SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-local-dev-only")
@@ -40,7 +37,7 @@ if DEBUG:
     ALLOWED_HOSTS += ["localhost", "127.0.0.1", "[::1]"]
 
 # Render のドメインに加えて、環境変数でも追加できるようにする（VPS 用）
-CSRF_TRUSTED_ORIGINS = ["https://*.onrender.com"] + [
+CSRF_TRUSTED_ORIGINS =  [
     o for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o
 ]
 
